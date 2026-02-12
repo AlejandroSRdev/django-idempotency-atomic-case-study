@@ -1,3 +1,29 @@
+"""
+Application Use Case — Energy Consumption
+
+This use case demonstrates a production-oriented implementation of a balance
+deduction operation under concurrent conditions.
+
+It intentionally focuses on correctness guarantees over architectural purism.
+
+Core guarantees provided:
+
+- Atomicity: The full operation executes inside a transaction.atomic() block.
+- Row-level locking: select_for_update() prevents concurrent reads of stale balances.
+- Idempotency: Enforced via a unique constraint on idempotency_key at the database level.
+- Race-condition safety: The balance update uses a database-level F() expression.
+- Explicit domain signaling: Business rule violations raise domain-specific exceptions.
+
+Architectural note:
+
+For simplicity and clarity, domain rules are evaluated close to the persistence
+model. In larger systems, aggregate roots and repository ports would be
+explicitly separated following a stricter hexagonal architecture.
+
+This example prioritizes transactional integrity and concurrency safety,
+as these are the critical concerns in real-world financial or quota-based systems.
+"""
+
 import logging
 
 from django.db import IntegrityError, transaction

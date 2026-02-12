@@ -1,3 +1,32 @@
+"""
+Persistence Models — Energy Domain (Django ORM)
+
+This module defines the persistence layer for a minimal energy consumption
+system used to demonstrate transactional integrity, idempotency, and
+concurrency control in Django.
+
+Design intent:
+
+These models are intentionally simple. The goal of this case study is not
+rich domain modeling, but correctness under concurrent access.
+
+Key architectural decisions:
+
+- Account represents a mutable balance holder.
+- EnergyConsumption records individual consumption events.
+- Idempotency is enforced at the database level via a UNIQUE constraint
+  on idempotency_key.
+- Referential integrity is guaranteed through a ForeignKey relationship.
+- Traceability is supported via automatic timestamping (created_at).
+
+Architectural note:
+
+In larger systems following strict hexagonal architecture, these ORM models
+would act purely as infrastructure adapters, mapping to domain entities.
+For this example, domain and persistence concerns are kept close to
+prioritize clarity and transactional correctness over structural complexity.
+"""
+
 from django.db import models
 
 

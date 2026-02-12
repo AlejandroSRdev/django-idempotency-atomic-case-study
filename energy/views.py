@@ -1,3 +1,32 @@
+"""
+API Layer — Energy Consumption Endpoint (Django REST Framework)
+
+This module exposes the HTTP interface for the energy consumption use case.
+
+Design intent:
+
+The view acts as a thin controller following the "fat application / thin
+transport layer" principle. Its responsibilities are intentionally limited to:
+
+- Basic input validation and type coercion
+- Delegation to the application use case
+- Translation of domain exceptions into HTTP responses
+- Maintaining clear separation between transport concerns and business logic
+
+Architectural decisions:
+
+- No business rules are implemented here.
+- All transactional guarantees (atomicity, locking, idempotency handling)
+  are delegated to the application layer.
+- Domain-specific exceptions are mapped explicitly to appropriate
+  HTTP status codes (422, 404, 200 replay, etc.).
+
+This structure reflects a pragmatic hexagonal approach:
+the view is an adapter translating HTTP requests into
+application-level operations without leaking transport logic
+into the core use case.
+"""
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView

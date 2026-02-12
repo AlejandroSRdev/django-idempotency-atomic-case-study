@@ -1,3 +1,35 @@
+"""
+Integration Tests — Energy Consumption Endpoint
+
+This test suite validates the full request lifecycle of the energy
+consumption endpoint through the HTTP layer.
+
+Design intent:
+
+The tests are written as integration tests rather than isolated unit tests.
+They exercise:
+
+- The REST API layer (input validation and HTTP mapping)
+- The application use case (transactional orchestration)
+- The persistence layer (database constraints, atomicity, idempotency)
+
+Key guarantees verified:
+
+- Successful deduction updates balance and creates a single consumption record.
+- Idempotency prevents double deduction under repeated requests.
+- Insufficient balance triggers rollback with no side effects.
+- Invalid input and missing resources return appropriate HTTP status codes.
+- Sequential valid requests accumulate correctly.
+- No partial writes occur when business rules fail.
+
+Each test runs inside Django's transactional test framework, ensuring
+automatic rollback and isolation between test cases.
+
+This approach prioritizes behavioral correctness over mocking,
+as transactional integrity and database-level guarantees are the
+core focus of this example.
+"""
+
 from django.test import TestCase
 from rest_framework.test import APIClient
 
