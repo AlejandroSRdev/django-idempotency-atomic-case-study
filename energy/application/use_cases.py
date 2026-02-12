@@ -1,0 +1,60 @@
+import logging
+
+from django.db import IntegrityError, transaction
+from django.db.models import F
+
+from energy.domain.exceptions import IdempotencyReplay, InsufficientEnergy
+from energy.models import Account, EnergyConsumption
+
+logger = logging.getLogger(__name__)
+
+
+def consume_energy(account_id, amount, idempotency_key):
+    """
+    Deducts energy from an account in a single atomic operation.
+
+    Guarantees:
+    - Atomicity via transaction.atomic()
+    - Row-level locking via select_for_update() to prevent concurrent modification
+    - Idempotency via unique constraint on idempotency_key
+    - Race-condition safety via F() expression for the balance update
+    """
+    with transaction.atomic():
+        # Lock the account row to prevent concurrent reads of stale balance
+        account = (
+            Account.objects
+            .select_for_update()
+            .get(id=account_id)
+        )
+
+        if account.energy < amount:
+            logger.warning(
+                "Insufficient energy: account=%s requested=%s available=%s",
+                account_id, amount, account.energy,
+            )
+            raise InsufficientEnergy(account_id, amount, account.energy)
+
+        try:
+            EnergyConsumption.objects.create(
+                account_id=account_id,
+                amount=amount,
+                idempotency_key=idempotency_key,
+            )
+        except IntegrityError:
+            # Duplicate idempotency_key: this request was already processed
+            logger.info(
+                "Idempotency replay: key=%s account=%s",
+                idempotency_key, account_id,
+            )
+            raise IdempotencyReplay(idempotency_key)
+
+        # F() expression ensures the UPDATE uses the database value, not the Python-cached one
+        Account.objects.filter(id=account_id).update(energy=F("energy") - amount)
+
+        account.refresh_from_db()
+
+    return {
+        "account_id": account.id,
+        "remaining_energy": account.energy,
+        "amount_consumed": amount,
+    }
